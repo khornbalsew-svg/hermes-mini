@@ -347,8 +347,9 @@ function toggleSidebar() { document.getElementById('sidebar').classList.toggle('
 
 // ── Settings ──
 function openSettings() {
-  $('apiUrlInput').value = state.apiUrl;
-  $('apiKeyInput').value = state.apiKey;
+  // Preserve HTML value attributes — don't overwrite with empty state
+  if (state.apiUrl) $('apiUrlInput').value = state.apiUrl;
+  if (state.apiKey) $('apiKeyInput').value = state.apiKey;
   $('settingsOverlay').classList.add('open');
 }
 function closeSettings() { $('settingsOverlay').classList.remove('open'); }
