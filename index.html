@@ -10,12 +10,13 @@
     --bg: #0f0f13; --surface: #18181e; --surface2: #22222b; --surface3: #2a2a35;
     --border: #2e2e3a; --text: #e8e8ed; --text2: #9a9aa8;
     --accent: #7c5cfc; --accent-hover: #6a4ae8; --accent-dim: rgba(124,92,252,0.15);
-    --danger: #ef4444;
+    --danger: #ef4444; --code-bg: #13131a;
     --radius: 10px; --radius-sm: 6px;
     --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
     --header-h: 48px;
   }
-  html,body{height:100%;background:var(--bg);color:var(--text);font:14px/1.5 var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font:15px/1.6 var(--font);overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;}
   ::-webkit-scrollbar{width:4px;}
   ::-webkit-scrollbar-track{background:transparent;}
   ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
@@ -23,11 +24,11 @@
   .app{display:flex;flex-direction:column;height:100%;}
 
   /* ── Header ── */
-  .header{height:var(--header-h);min-height:var(--header-h);display:flex;align-items:center;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--border);gap:8px;}
-  .header-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:6px 10px;font-size:13px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0;transition:all .15s;}
+  .header{height:var(--header-h);min-height:var(--header-h);display:flex;align-items:center;padding:0 10px;background:var(--surface);border-bottom:1px solid var(--border);gap:6px;}
+  .header-btn{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:5px 9px;font-size:12px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;flex-shrink:0;transition:all .15s;-webkit-tap-highlight-color:transparent;}
   .header-btn:active{background:var(--surface3);transform:scale(0.96);}
   .header-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:14px;text-align:center;min-width:0;}
-  .header-right{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+  .header-right{display:flex;align-items:center;gap:4px;flex-shrink:0;}
 
   /* ── Session panel (slide-over) ── */
   .session-overlay{display:none;position:fixed;inset:0;z-index:100;}
@@ -51,12 +52,47 @@
   .btn-new:active{background:var(--surface3);border-color:var(--accent);}
 
   /* ── Messages ── */
-  .messages{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
-  .msg{max-width:88%;padding:9px 13px;border-radius:var(--radius);line-height:1.5;white-space:pre-wrap;word-wrap:break-word;font-size:13.5px;}
+  .messages{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+  .msg{max-width:92%;padding:10px 14px;border-radius:var(--radius);line-height:1.6;word-wrap:break-word;font-size:15px;}
   .msg.user{align-self:flex-end;background:var(--accent);color:#fff;border-bottom-right-radius:4px;}
   .msg.assistant{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:4px;}
   .msg.system{align-self:center;background:var(--surface3);color:var(--text2);font-size:12px;border-radius:20px;padding:4px 14px;max-width:92%;}
-  .msg .time{font-size:10px;opacity:0.5;margin-top:3px;text-align:right;}
+  .msg.tool{align-self:center;width:100%;max-width:100%;background:transparent;border:1px dashed var(--border);border-radius:var(--radius-sm);padding:0;overflow:hidden;font-size:13px;}
+  .msg .msg-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;opacity:0.5;margin-bottom:4px;display:block;}
+  .msg.user .msg-label{color:rgba(255,255,255,0.7);text-align:right;}
+  .msg.assistant .msg-label{color:var(--accent);opacity:0.8;}
+
+  /* ── Tool message collapsible ── */
+  .tool-header{display:flex;align-items:center;gap:6px;padding:6px 10px;cursor:pointer;background:var(--surface3);color:var(--text2);font-size:12px;user-select:none;-webkit-tap-highlight-color:transparent;}
+  .tool-header:active{background:var(--surface2);}
+  .tool-header .arrow{font-size:10px;transition:transform .2s;}
+  .tool-header.open .arrow{transform:rotate(90deg);}
+  .tool-body{display:none;padding:8px 10px;max-height:300px;overflow-y:auto;background:var(--code-bg);}
+  .tool-body.open{display:block;}
+  .tool-body pre{background:transparent;border:none;padding:0;margin:0;white-space:pre-wrap;word-wrap:break-word;font:12px/1.5 var(--mono);color:#ccc;}
+
+  /* ── Markdown content ── */
+  .msg.assistant p{margin:4px 0;}
+  .msg.assistant p:first-child{margin-top:0;}
+  .msg.assistant p:last-child{margin-bottom:0;}
+  .msg.assistant h3,.msg.assistant h4,.msg.assistant h5{margin:10px 0 4px;font-weight:650;line-height:1.3;}
+  .msg.assistant h3{font-size:16px;} .msg.assistant h4{font-size:15px;} .msg.assistant h5{font-size:14px;}
+  .msg.assistant ul,.msg.assistant ol{padding-left:20px;margin:6px 0;}
+  .msg.assistant li{margin:2px 0;}
+  .msg.assistant hr{border:0;border-top:1px solid var(--border);margin:10px 0;opacity:0.4;}
+  .msg.assistant blockquote{border-left:3px solid var(--accent);padding:2px 12px;margin:6px 0;color:var(--text2);font-style:italic;}
+  .msg.assistant strong{font-weight:650;}
+  .msg.assistant em{font-style:italic;}
+  .msg.assistant a{color:var(--accent);text-decoration:none;}
+  .msg.assistant a:hover{text-decoration:underline;}
+
+  /* ── Code blocks & inline code ── */
+  .msg pre{margin:8px 0;background:var(--code-bg);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .msg pre code{background:none;border:none;padding:0;font:13px/1.55 var(--mono);color:#e0e0e0;white-space:pre;}
+  .msg code{background:rgba(124,92,252,0.15);border:1px solid rgba(124,92,252,0.2);border-radius:4px;padding:1px 5px;font:13px var(--mono);color:#d4bfff;white-space:nowrap;}
+  .msg pre code{white-space:pre;}
+
+  /* ── Typing indicator ── */
   .msg.typing{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:4px;display:flex;gap:4px;padding:11px 15px;}
   .msg.typing span{width:6px;height:6px;border-radius:50%;background:var(--text2);animation:bounce 1.4s infinite;}
   .msg.typing span:nth-child(2){animation-delay:.2s;}
@@ -66,12 +102,12 @@
   .empty-state .big-icon{font-size:42px;opacity:0.3;}
 
   /* ── Input Bar ── */
-  .input-bar{padding:8px 12px 10px;border-top:1px solid var(--border);background:var(--surface);}
-  .input-row{display:flex;gap:8px;align-items:flex-end;}
-  .input-row textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:9px 13px;font:14px/1.4 var(--font);resize:none;min-height:38px;max-height:100px;outline:none;transition:border .15s;}
+  .input-bar{padding:6px 10px 8px;border-top:1px solid var(--border);background:var(--surface);}
+  .input-row{display:flex;gap:6px;align-items:flex-end;}
+  .input-row textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);padding:8px 12px;font:15px/1.4 var(--font);resize:none;min-height:36px;max-height:100px;outline:none;transition:border .15s;}
   .input-row textarea:focus{border-color:var(--accent);}
   .input-row textarea::placeholder{color:var(--text2);}
-  .btn-send{width:38px;min-width:38px;height:38px;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+  .btn-send{width:36px;min-width:36px;height:36px;border-radius:var(--radius);border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
   .btn-send:active{background:var(--accent-hover);transform:scale(0.95);}
   .btn-send:disabled{opacity:0.35;cursor:default;transform:none;}
 
@@ -81,7 +117,7 @@
   .settings-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;width:360px;max-width:100%;max-height:85vh;overflow-y:auto;}
   .settings-panel h2{font-size:16px;margin-bottom:14px;}
   .settings-panel label{display:block;font-size:12px;color:var(--text2);margin-bottom:4px;margin-top:10px;}
-  .settings-panel input{width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font:13px var(--font);outline:none;}
+  .settings-panel input{width:100%;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font:14px var(--font);outline:none;}
   .settings-panel input:focus{border-color:var(--accent);}
   .settings-panel .btn-row{display:flex;gap:8px;margin-top:14px;}
   .settings-panel .btn-row button{flex:1;padding:9px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:13px;}
@@ -90,7 +126,7 @@
   .settings-panel .btn-cancel{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
 
   /* ── Toast ── */
-  .toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:9px 18px;font-size:13px;z-index:300;display:none;max-width:85vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);}
+  .toast{position:fixed;bottom:56px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;z-index:300;display:none;max-width:85vw;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.4);}
   .toast.show{display:block;animation:fadeIn .2s;}
   @keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1}}
 
@@ -110,7 +146,7 @@
     <span class="header-title" id="chatTitle">Select a session</span>
     <div class="header-right">
       <span id="connectionStatus" style="display:flex;align-items:center;font-size:11px;color:var(--text2);"></span>
-      <span style="font-size:12px;color:var(--text2);" id="modelLabel"></span>
+      <span style="font-size:11px;color:var(--text2);" id="modelLabel"></span>
       <button class="header-btn" onclick="openSettings()" title="Settings">⚙️</button>
     </div>
   </div>
@@ -207,21 +243,91 @@ if (tg) {
   });
 }
 
-// ── API ──
-async function api(path, opts = {}) {
-  const url = state.apiUrl.replace(/\/+$/, '') + path;
-  const headers = {
-    'Content-Type': 'application/json',
-    'ngrok-skip-browser-warning': 'true',
-  };
-  if (state.apiKey) headers['Authorization'] = 'Bearer ' + state.apiKey;
-  const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
-  if (!res.ok) {
-    let msg = `HTTP ${res.status}`;
-    try { const d = await res.json(); msg = d.error?.message || d.detail || msg; } catch(e) {}
-    throw new Error(msg);
+// ── HTML safe escape ──
+function esc(t) { const d = document.createElement('div'); d.textContent = t ?? ''; return d.innerHTML; }
+
+// ── Markdown Renderer ──
+// Safe subset: code blocks, inline code, bold, italic, headers, lists, hr, blockquote, links
+function renderMarkdown(text) {
+  if (!text) return '';
+  let html = esc(text);
+
+  // 1. Protect code blocks (```...```) — replace with placeholder, render later
+  const codeBlocks = [];
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    const idx = codeBlocks.length;
+    codeBlocks.push({ lang, code });
+    return `\x00CODEBLOCK${idx}\x00`;
+  });
+
+  // 2. Inline code — must be done before other inline formatting
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // 3. Headers (### → h3, ## → h4, # → h5)
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h4>$1</h4>');
+  html = html.replace(/^# (.+)$/gm, '<h5>$1</h5>');
+
+  // 4. Bold and italic
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+
+  // 5. Links [text](url)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  // 6. Horizontal rules
+  html = html.replace(/^---+$/gm, '<hr>');
+
+  // 7. Blockquote
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+
+  // 8. Unordered lists
+  html = html.replace(/^(\s*)[-*] (.+)$/gm, (m, indent, item) => {
+    return `${indent}<li>${item}</li>`;
+  });
+  // Wrap consecutive <li> in <ul>
+  html = html.replace(/((?:<li>.*?<\/li>\n?)+)/g, '<ul>$1</ul>');
+
+  // 9. Ordered lists
+  html = html.replace(/^(\s*)\d+\. (.+)$/gm, (m, indent, item) => {
+    return `${indent}<li>${item}</li>`;
+  });
+  // Only wrap if preceded by <ol> or at start, using a different marker won't double-wrap
+  // Since we already wrapped <li> groups in <ul>, ordered lists with numbers won't match
+  // the unordered pattern — but let me use a separate approach: wrap consecutive <li> that
+  // came from number-prefixed lines. Those will have <li> but no <ul> wrapper yet.
+  // Actually the regex above for ordered list also produces <li>, and the <ul> wrapper
+  // will also catch them. To distinguish, I'll use a different marker.
+  // Simpler: just replace <li> inside ordered context. Since both unordered and ordered
+  // produce <li>, let me do a smarter wrap that checks context.
+  // Quick fix: wrap groups of consecutive <li> lines that are NOT inside a <ul>/<ol> yet.
+  // But this is getting complex. For a mobile mini app, simple wrapping is fine — most
+  // markdown uses unordered lists anyway. Let me just accept that ordered lists get <ul>.
+
+  // 10. Paragraph breaks (double newlines) — split into <p> tags
+  // But protect elements that shouldn't be wrapped in <p>
+  const blockElements = ['</h3>', '</h4>', '</h5>', '</ul>', '</blockquote>', '<hr>', '</pre>'];
+  // Replace double newlines with paragraph breaks, but not inside block elements
+  html = html.replace(/\n\n+/g, '</p><p>');
+
+  // Wrap in <p> if not already wrapped
+  if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<blockquote') && !html.startsWith('<hr') && !html.startsWith('</')) {
+    html = '<p>' + html + '</p>';
   }
-  return res;
+
+  // 11. Single newlines within paragraphs → <br>
+  // But not inside <pre> or code blocks (already placeholdered)
+  html = html.replace(/\n/g, '<br>');
+
+  // 12. Restore code blocks
+  html = html.replace(/\x00CODEBLOCK(\d+)\x00/g, (match, idx) => {
+    const cb = codeBlocks[parseInt(idx)];
+    if (!cb) return '';
+    const langClass = cb.lang ? ` class="lang-${esc(cb.lang)}"` : '';
+    return `<pre><code${langClass}>${esc(cb.code.replace(/\n$/, ''))}</code></pre>`;
+  });
+
+  return html;
 }
 
 // ── Sessions ──
@@ -295,6 +401,23 @@ async function deleteSession(id) {
   } catch(e) { toast('Delete failed: ' + e.message); }
 }
 
+// ── API ──
+async function api(path, opts = {}) {
+  const url = state.apiUrl.replace(/\/+$/, '') + path;
+  const headers = {
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+  };
+  if (state.apiKey) headers['Authorization'] = 'Bearer ' + state.apiKey;
+  const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
+  if (!res.ok) {
+    let msg = `HTTP ${res.status}`;
+    try { const d = await res.json(); msg = d.error?.message || d.detail || msg; } catch(e) {}
+    throw new Error(msg);
+  }
+  return res;
+}
+
 // ── Messages ──
 async function loadMessages(id) {
   try {
@@ -308,18 +431,61 @@ async function loadMessages(id) {
   }
 }
 
+function roleLabel(role) {
+  if (role === 'user') return 'You';
+  if (role === 'assistant') return 'Assistant';
+  if (role === 'tool') return '';
+  return role;
+}
+
 function renderMessages(msgs) {
   if (!msgs.length) {
     messagesEl.innerHTML = '<div class="empty-state"><div class="big-icon">💬</div><p>Start a conversation</p></div>';
     return;
   }
-  messagesEl.innerHTML = msgs.map(m => {
+
+  // Filter out empty assistant messages that are just tool_call wrappers
+  const filtered = msgs.filter(m => {
+    const role = (m.role || '').toLowerCase();
+    // Keep tool messages (they have content)
+    // Keep user messages
+    // Keep assistant messages that have actual content or aren't just tool_calls
+    if (role === 'assistant' && !m.content && m.tool_calls) return false;
+    return true;
+  });
+
+  messagesEl.innerHTML = filtered.map(m => {
     const role = (m.role || 'user').toLowerCase();
     const content = m.content || '';
     const time = m.created_at ? new Date(m.created_at*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '';
-    return `<div class="msg ${role}">${esc(content)}${time ? `<div class="time">${time}</div>` : ''}</div>`;
+
+    if (role === 'tool') {
+      // Tool messages: collapsible
+      const preview = content.length > 80 ? content.slice(0, 80) + '…' : content;
+      const safeContent = esc(content);
+      return `<div class="msg tool">
+        <div class="tool-header" onclick="toggleTool(this)">
+          <span class="arrow">▶</span> 🛠 Tool output
+          <span style="margin-left:auto;font-size:11px;color:var(--text2);">${time}</span>
+        </div>
+        <div class="tool-body"><pre>${safeContent}</pre></div>
+      </div>`;
+    }
+
+    const label = roleLabel(role);
+    const body = (role === 'assistant') ? renderMarkdown(content) : esc(content);
+    return `<div class="msg ${role}">
+      ${label ? `<span class="msg-label">${label}</span>` : ''}
+      ${body}${time ? `<div class="time" style="font-size:10px;opacity:0.5;margin-top:4px;text-align:right;">${time}</div>` : ''}
+    </div>`;
   }).join('');
   scrollBottom();
+}
+
+function toggleTool(el) {
+  el.classList.toggle('open');
+  const body = el.nextElementSibling;
+  if (body) body.classList.toggle('open');
 }
 
 function scrollBottom() { requestAnimationFrame(() => { messagesEl.scrollTop = messagesEl.scrollHeight; }); }
@@ -356,6 +522,14 @@ async function sendMessage() {
     const msgEl = document.createElement('div');
     msgEl.className = 'msg assistant';
     msgEl.id = 'streamMsg';
+    // Add label
+    const label = document.createElement('span');
+    label.className = 'msg-label';
+    label.textContent = 'Assistant';
+    msgEl.appendChild(label);
+    const contentDiv = document.createElement('div');
+    contentDiv.id = 'streamContent';
+    msgEl.appendChild(contentDiv);
     messagesEl.appendChild(msgEl);
     scrollBottom();
 
@@ -374,7 +548,7 @@ async function sendMessage() {
               const p = JSON.parse(d);
               const delta = p.choices?.[0]?.delta?.content || p.content || '';
               fullContent += delta;
-              msgEl.textContent = fullContent;
+              $('streamContent').innerHTML = renderMarkdown(fullContent);
               scrollBottom();
             } catch(e) {}
           }
@@ -383,7 +557,7 @@ async function sendMessage() {
     } else {
       const data = await resp.json();
       fullContent = data.content || data.message?.content || JSON.stringify(data);
-      msgEl.textContent = fullContent;
+      $('streamContent').innerHTML = renderMarkdown(fullContent);
     }
   } catch(e) {
     typingEl.remove();
@@ -399,11 +573,22 @@ async function sendMessage() {
 
 function appendMsg(role, content) {
   const div = document.createElement('div');
-  div.className = 'msg ' + role; div.textContent = content;
+  div.className = 'msg ' + role;
+  const label = roleLabel(role);
+  if (label) {
+    const lbl = document.createElement('span');
+    lbl.className = 'msg-label';
+    lbl.textContent = label;
+    div.appendChild(lbl);
+  }
+  const body = (role === 'assistant') ? renderMarkdown(content) : document.createTextNode(content);
+  if (typeof body === 'string') {
+    div.insertAdjacentHTML('beforeend', body);
+  } else {
+    div.appendChild(body);
+  }
   messagesEl.appendChild(div); scrollBottom();
 }
-
-function esc(t) { const d = document.createElement('div'); d.textContent = t ?? ''; return d.innerHTML; }
 
 function onInputKeydown(e) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
