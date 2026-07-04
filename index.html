@@ -89,7 +89,7 @@
   /* ── Code blocks & inline code ── */
   .msg pre{margin:8px 0;background:var(--code-bg);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .msg pre code{background:none;border:none;padding:0;font:13px/1.55 var(--mono);color:#e0e0e0;white-space:pre;}
-  .msg code{background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.18);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:13px;color:#c8b8ff;white-space:break-spaces;word-break:break-all;}
+  .msg code{background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.18);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:13px;color:var(--text);white-space:break-spaces;word-break:break-all;}
   .msg pre code{white-space:pre;}
 
   /* ── Typing indicator ── */
@@ -251,9 +251,9 @@ function esc(t) { const d = document.createElement('div'); d.textContent = t ?? 
 function renderMarkdown(text) {
   if (!text) return '';
 
-  // 1. Protect code blocks (```...```) with placeholders
+  // 1. Protect code blocks (```...```) — must start at beginning of a line
   const codeBlocks = [];
-  let html = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+  let html = text.replace(/(?:^|\n)```(\w*)\n?([\s\S]*?)```/g, (match, lang, code, offset) => {
     const idx = codeBlocks.length;
     codeBlocks.push({ lang: lang || '', code: code.replace(/\n$/, '') });
     return `\x00CODEBLOCK${idx}\x00`;
@@ -263,7 +263,11 @@ function renderMarkdown(text) {
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   // 3. Inline formatting (safe on escaped text)
-  html = html.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  html = html.replace(/`([^`\n]+)`/g, (match, content) => {
+    // Skip whitespace-only content (false matches between adjacent backtick groups)
+    if (!content.trim()) return match;
+    return '<code>' + content + '</code>';
+  });
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/(?<!\w)\*(?!\s)(.+?)(?<!\s)\*(?!\w)/g, '<em>$1</em>');
   html = html.replace(/\[([^\]]+)\]\(((?:https?|ftp):\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
