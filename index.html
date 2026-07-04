@@ -89,7 +89,7 @@
   /* ── Code blocks & inline code ── */
   .msg pre{margin:8px 0;background:var(--code-bg);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px 14px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .msg pre code{background:none;border:none;padding:0;font:13px/1.55 var(--mono);color:#e0e0e0;white-space:pre;}
-  .msg code{background:rgba(124,92,252,0.15);border:1px solid rgba(124,92,252,0.2);border-radius:4px;padding:1px 5px;font:13px var(--mono);color:#d4bfff;white-space:nowrap;}
+  .msg code{background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.18);border-radius:4px;padding:1px 5px;font:13px var(--mono);color:#c8b8ff;white-space:nowrap;}
   .msg pre code{white-space:pre;}
 
   /* ── Typing indicator ── */
@@ -250,81 +250,72 @@ function esc(t) { const d = document.createElement('div'); d.textContent = t ?? 
 // Safe subset: code blocks, inline code, bold, italic, headers, lists, hr, blockquote, links
 function renderMarkdown(text) {
   if (!text) return '';
-  let html = esc(text);
 
-  // 1. Protect code blocks (```...```) — replace with placeholder, render later
+  // Detect if text is already HTML-escaped or raw
+  // (from streaming we get raw text; from stored messages the content is raw)
+  let html = text;
+
+  // 1. Protect code blocks (```...```) — extract first, render as <pre><code> later
   const codeBlocks = [];
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, (match, lang, code) => {
     const idx = codeBlocks.length;
-    codeBlocks.push({ lang, code });
+    codeBlocks.push({ lang: lang || '', code: code.replace(/\n$/, '') });
     return `\x00CODEBLOCK${idx}\x00`;
   });
 
-  // 2. Inline code — must be done before other inline formatting
+  // 2. HTML-escape everything now (code blocks are placeholder-protected)
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  // 3. Inline code — must be done before other inline formatting
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-  // 3. Headers (### → h3, ## → h4, # → h5)
+  // 4. Headers (### → h3, ## → h4, # → h5) — only at line start
   html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.+)$/gm, '<h4>$1</h4>');
   html = html.replace(/^# (.+)$/gm, '<h5>$1</h5>');
 
-  // 4. Bold and italic
+  // 5. Bold and italic — with word-boundary guards
+  // Bold: **text** (double asterisks)
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Italic: *text* only when surrounded by non-word chars or at word boundaries
+  // This avoids turning *args, *.txt, or 2*3 into italic
+  html = html.replace(/(^|\s|\()\*([^*\s][^*]*?)\*(\s|$|\.|,|!|\?|\))/g, '$1<em>$2</em>$3');
 
-  // 5. Links [text](url)
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  // 6. Links [text](url) — ONLY match real URLs (contain ://)
+  html = html.replace(/\[([^\]]+)\]\(((?:https?|ftp):\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
-  // 6. Horizontal rules
+  // 7. Horizontal rules
   html = html.replace(/^---+$/gm, '<hr>');
 
-  // 7. Blockquote
+  // 8. Blockquote (> text)
   html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
 
-  // 8. Unordered lists
+  // 9. Unordered lists (- item or * item at line start)
   html = html.replace(/^(\s*)[-*] (.+)$/gm, (m, indent, item) => {
-    return `${indent}<li>${item}</li>`;
+    return `<li>${indent}${item}</li>`;
   });
   // Wrap consecutive <li> in <ul>
-  html = html.replace(/((?:<li>.*?<\/li>\n?)+)/g, '<ul>$1</ul>');
+  html = html.replace(/((?:<li>.*?<\/li>\n?)+)/g, '<ul>\n$1</ul>\n');
 
-  // 9. Ordered lists
-  html = html.replace(/^(\s*)\d+\. (.+)$/gm, (m, indent, item) => {
-    return `${indent}<li>${item}</li>`;
-  });
-  // Only wrap if preceded by <ol> or at start, using a different marker won't double-wrap
-  // Since we already wrapped <li> groups in <ul>, ordered lists with numbers won't match
-  // the unordered pattern — but let me use a separate approach: wrap consecutive <li> that
-  // came from number-prefixed lines. Those will have <li> but no <ul> wrapper yet.
-  // Actually the regex above for ordered list also produces <li>, and the <ul> wrapper
-  // will also catch them. To distinguish, I'll use a different marker.
-  // Simpler: just replace <li> inside ordered context. Since both unordered and ordered
-  // produce <li>, let me do a smarter wrap that checks context.
-  // Quick fix: wrap groups of consecutive <li> lines that are NOT inside a <ul>/<ol> yet.
-  // But this is getting complex. For a mobile mini app, simple wrapping is fine — most
-  // markdown uses unordered lists anyway. Let me just accept that ordered lists get <ul>.
-
-  // 10. Paragraph breaks (double newlines) — split into <p> tags
-  // But protect elements that shouldn't be wrapped in <p>
-  const blockElements = ['</h3>', '</h4>', '</h5>', '</ul>', '</blockquote>', '<hr>', '</pre>'];
-  // Replace double newlines with paragraph breaks, but not inside block elements
+  // 10. Paragraph breaks — double newlines become paragraph separators
   html = html.replace(/\n\n+/g, '</p><p>');
 
-  // Wrap in <p> if not already wrapped
-  if (!html.startsWith('<h') && !html.startsWith('<ul') && !html.startsWith('<blockquote') && !html.startsWith('<hr') && !html.startsWith('</')) {
+  // Wrap in <p> if it doesn't start with a block-level tag
+  if (!/^\s*<(?:h[345]|ul|ol|blockquote|hr|pre|li)/.test(html)) {
     html = '<p>' + html + '</p>';
   }
 
   // 11. Single newlines within paragraphs → <br>
-  // But not inside <pre> or code blocks (already placeholdered)
   html = html.replace(/\n/g, '<br>');
 
   // 12. Restore code blocks
   html = html.replace(/\x00CODEBLOCK(\d+)\x00/g, (match, idx) => {
     const cb = codeBlocks[parseInt(idx)];
     if (!cb) return '';
-    const langClass = cb.lang ? ` class="lang-${esc(cb.lang)}"` : '';
-    return `<pre><code${langClass}>${esc(cb.code.replace(/\n$/, ''))}</code></pre>`;
+    const langAttr = cb.lang ? ` class="lang-${cb.lang.replace(/[^a-zA-Z0-9_-]/g,'')}"` : '';
+    // Sanitize: escape the code content
+    const safeCode = cb.code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<pre><code${langAttr}>${safeCode}</code></pre>`;
   });
 
   return html;
