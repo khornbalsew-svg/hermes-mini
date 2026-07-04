@@ -78,6 +78,11 @@
   @keyframes fadeIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1}}
   @media(max-width:600px){.sidebar{display:none;}.sidebar.open{display:flex;position:fixed;inset:0;z-index:50;width:100%;}.msg{max-width:92%;}.sidebar-toggle{display:block;}}
   .sidebar-toggle{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px;}
+  .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0;}
+  .status-dot.online{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,0.5);}
+  .status-dot.offline{background:#ef4444;}
+  .status-dot.loading{background:#f59e0b;animation:pulse 1s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 </style>
 </head>
 <body>
@@ -94,6 +99,7 @@
         <span class="title" id="chatTitle">Select a session</span>
       </div>
       <div style="display:flex;align-items:center;gap:6px;">
+        <span id="connectionStatus" style="display:flex;align-items:center;font-size:12px;color:var(--text2);"></span>
         <span style="font-size:12px;color:var(--text2);" id="modelLabel"></span>
         <button style="background:none;border:none;color:var(--text2);cursor:pointer;padding:4px 8px;font-size:15px;" onclick="openSettings()" title="Settings">⚙️</button>
       </div>
@@ -141,7 +147,7 @@ try { if (window.Telegram && window.Telegram.WebApp) { tg = window.Telegram.WebA
 const $ = id => document.getElementById(id);
 const messagesEl = $('messages'), input = $('input'), sendBtn = $('sendBtn');
 const sessionList = $('sessionList'), chatTitle = $('chatTitle'), toastEl = $('toast');
-const modelLabel = $('modelLabel');
+const modelLabel = $('modelLabel'), connectionStatus = $('connectionStatus');
 
 let toastTimer = null;
 function toast(msg) {
@@ -149,10 +155,18 @@ function toast(msg) {
   clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
 }
 
+// ── Connection Status ──
+function setStatus(state, label) {
+  connectionStatus.innerHTML = `<span class="status-dot ${state}"></span>${label}`;
+}
+
 // ── API ──
 async function api(path, opts = {}) {
   const url = state.apiUrl.replace(/\/+$/, '') + path;
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = {
+    'Content-Type': 'application/json',
+    'ngrok-skip-browser-warning': 'true',
+  };
   if (state.apiKey) headers['Authorization'] = 'Bearer ' + state.apiKey;
   const res = await fetch(url, { ...opts, headers: { ...headers, ...opts.headers } });
   if (!res.ok) {
@@ -166,6 +180,7 @@ async function api(path, opts = {}) {
 // ── Sessions ──
 async function loadSessions() {
   if (!state.apiUrl) return;
+  setStatus('loading', 'Connecting...');
   try {
     const res = await api('/api/sessions');
     const data = await res.json();
@@ -173,10 +188,12 @@ async function loadSessions() {
     const items = data.data || data.sessions || data || [];
     state.sessions = (Array.isArray(items) ? items : []).filter(s => s.id);
     renderSessions();
+    setStatus('online', 'Connected');
   } catch(e) {
     console.error('sessions:', e.message);
     state.sessions = [];
     renderSessions();
+    setStatus('offline', e.message.includes('Failed to fetch') ? 'Cannot reach API' : 'Error');
   }
 }
 
@@ -279,7 +296,10 @@ async function sendMessage() {
   let fullContent = '';
   try {
     const url = state.apiUrl.replace(/\/+$/, '') + `/api/sessions/${encodeURIComponent(state.sessionId)}/chat/stream`;
-    const headers = { 'Content-Type': 'application/json' };
+    const headers = {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true',
+    };
     if (state.apiKey) headers['Authorization'] = 'Bearer ' + state.apiKey;
 
     const resp = await fetch(url, { method: 'POST', headers, body: JSON.stringify({ message: text }) });
