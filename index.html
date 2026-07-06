@@ -451,9 +451,9 @@ async function selectSession(id) {
 
 async function newSession() {
   try {
-    const res = await api('/api/sessions', { method: 'POST' });
+    const res = await api('/api/sessions', { method: 'POST', body: JSON.stringify({}) });
     const data = await res.json();
-    const sid = data.id || data.session_id;
+    const sid = data.session?.id || data.id || data.session_id;
     if (sid) {
       state.sessions.unshift({ id: sid, title: 'New Session' });
       renderSessions(); await selectSession(sid); toast('New session created');
